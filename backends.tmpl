@@ -1,0 +1,4 @@
+%{ for addr in ip_addrs ~}
+network { name = ${addr}
+}
+%{ endfor ~}

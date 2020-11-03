@@ -1,0 +1,11 @@
+---
+  - name: Define the backend configuration with one or more files at init
+    hosts: localhost
+    tasks:
+      - name: fdskjfdsfds  
+        community.general.terraform:
+          project_path: '/root/openstack_tf/'
+          state: present
+          lock: true
+          force_init: true
+

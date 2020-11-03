@@ -1,0 +1,74 @@
+provider "openstack" {
+  user_name   = "admin"
+  password    = "Av1x6Vm4uoBxo3EGp4HAyWBK9"
+  auth_url    =  "http://10.81.1.150:5000/v3"
+  tenant_name = "admin"
+  project_domain_name= "default"
+  region      = "regionOne"
+}
+
+
+resource "openstack_compute_instance_v2" "Instance" {
+  name = "asad"
+  flavor_id = var.flavor_id
+  image_id = var.image_id
+  key_pair = local.normalized_value.key_name
+  security_groups = local.security_groups_list 
+  user_data = file("bootstrap.sh")
+                 
+   dynamic "network" {
+    for_each = local.net_ids
+    content {
+      uuid                 = network.value
+    }
+  }
+}
+
+
+
+data "template_file" "test" {
+   template = templatefile("${path.module}/backends.tmpl", {ip_addrs = local.normalized_value.networks[*].uuid})
+  }
+
+
+
+output "instance_ip" {
+    value = openstack_compute_instance_v2.Instance.access_ip_v4
+}
+
+
+output "terraorm-provide" {
+	value= "Connect with openstack auth"
+
+}
+
+output "rendered-a" {
+  value = "${data.template_file.test.*.rendered}"
+}
+
+
+output "netwrk" {
+  value = local.net_ids
+}
+
+
+
+locals {
+     json_data = jsondecode(file("${path.module}/openstack-vm-prov.json"))
+     normalized_value = {
+     key_name   = tostring(try(local.json_data.server.key_name, null))
+     networks = try([tostring(local.json_data.server.networks)],tolist(local.json_data.server.networks),)   
+     security_groups = try([tostring(local.json_data.server.security_groups)],tolist(local.json_data.server.security_groups),)
+          }
+    net_ids = [
+             for person in local.normalized_value.networks:
+      person.uuid
+             ]
+   
+    security_groups_list = [
+             for person in local.normalized_value.security_groups:
+      person.name
+             ]
+
+
+}
